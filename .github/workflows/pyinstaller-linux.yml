@@ -1,0 +1,28 @@
+name: Pyinstaller Linux
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Package Application
+      uses: sayyid5416/pyinstaller@v1.8.0
+      with:
+        spec: './StudyDrive Scraper.spec'
+        requirements: './requirements.txt'
+        python_ver: 3.13
+#       python_arch: x86
+
+    - uses: actions/upload-artifact@v4
+      with:
+        name: 'StudySnatcher - Linux'
+        path: './dist/StudySnatcher'
