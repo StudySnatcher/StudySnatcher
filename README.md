@@ -30,7 +30,7 @@
 <h3 align="center">StudySnatcher</h3>
 
   <p align="center">
-    Download all files from any StudyDrive courses
+    Download files from StudyDrive courses
   </p>
 </div>
 
