@@ -56,7 +56,7 @@ def get_download_link(document_id, session, pdf_converted):
 
 def get_course_documents(course_id, session):
     """Retrieves all document IDs for a given course."""
-    document_ids = []
+    documents = []
     current_page = 0
     has_next_page = True
 
@@ -70,13 +70,58 @@ def get_course_documents(course_id, session):
             session, url, params=params)
         data = response.json()
 
-        # TODO: check
-        document_ids.extend(f["file_id"]
-                            for f in data.get("files", []) if "file_id" in f)
+        # {
+        #     'file_id': <int>,
+        #     'file_name': <str>,
+        #     'description': <str>,
+        #     'uploaded': <str>,
+        #     'time': <str>,
+        #     'course_id': <int>,
+        #     'course_name': <str>,
+        #     'course_link': <str>,
+        #     'university_id': <int>,
+        #     'university_name': <str>,
+        #     'semester_id': <int>,
+        #     'semester': <str>,
+        #     'has_ai_content': <bool>,
+        #     'flashcard_set_id': <None or int>,
+        #     'study_list_id': <None or int>,
+        #     'professor': <str>,
+        #     'visibility': <int>,
+        #     'file_type': <int>,
+        #     'type_name': <str>,
+        #     'is_owner': <bool>,
+        #     'is_followed': <bool>,
+        #     'is_infected': <bool>,
+        #     'link': <str>,
+        #     'preview_link': <str>,
+        #     'uservote': <bool>,
+        #     'user_star_vote': <int>,
+        #     'avg_star_score': <int>,
+        #     'upvotes': <int>,
+        #     'downvotes': <int>,
+        #     'rating': <int>,
+        #     'downloads': <int>,
+        #     'questions': <int>,
+        #     'user_data': {
+        #         'id': <None or int>,
+        #         'identity_id': <None or int>,
+        #         'name': <str>,
+        #         'link': <str>,
+        #         'picture': <str>,
+        #         'profile_picture': <str>,
+        #         'karma_points': <None or int>,
+        #         'gamify_avatar_url': <None or str>,
+        #         'time': <str>,
+        #         'is_deleted': <bool>
+        #     }
+        # }
+        documents.extend((f["file_id"], f["uploaded"]) for f in data.get("files", []) if "file_id" in f and "uploaded" in f)
+
         has_next_page = data.get("last_page", current_page) > current_page
         current_page += 1
 
-    return document_ids
+    return documents
 
 
 def initialize_session():
@@ -140,6 +185,27 @@ def download_file(url, save_path):
     except requests.RequestException as e:
         print(f"Error downloading file: {e}")
 
+def change_file_timestamp(file_path, new_timestamp):
+    """
+    Changes the modification and access time of a file to the given timestamp.
+    
+    :param file_path: Path to the file
+    :param new_timestamp: Timestamp in the format 'YYYY-MM-DD HH:MM:SS'
+    """
+    try:
+        # Parse the new timestamp string into a datetime object
+        new_time = datetime.strptime(new_timestamp, '%Y-%m-%d %H:%M:%S')
+        
+        # Convert the datetime object to a Unix timestamp
+        new_unix_time = new_time.timestamp()
+        
+        # Use os.utime to update the file's access and modification times
+        os.utime(file_path, (new_unix_time, new_unix_time))
+        
+        # print(f"Timestamp of '{file_path}' changed to {new_timestamp}")
+    except Exception as e:
+        print(f"An error occurred when trying to change the timestamp of '{file_path}' to {new_timestamp}: {e}")
+
 
 def create_folder(folder_path):
     """Creates a folder, deleting it first if it already exists."""
@@ -196,7 +262,7 @@ def run(username, password, course_url, converted_to_pdf):
     folder_path = re.sub(r'[<>:"/\\|?*\n\t]', '', course_name)
     create_folder(folder_path)
 
-    for doc_id in get_course_documents(course_number, session):
+    for doc_id, upload_time in get_course_documents(course_number, session):
         url = get_download_link(doc_id, session, converted_to_pdf)
         if not url:
             continue
@@ -206,5 +272,6 @@ def run(username, password, course_url, converted_to_pdf):
         save_path = os.path.join(folder_path, filename)
         if not os.path.exists(save_path):
             download_file(url, save_path)
+            change_file_timestamp(save_path, upload_time)
 
     print("All files downloaded.")
