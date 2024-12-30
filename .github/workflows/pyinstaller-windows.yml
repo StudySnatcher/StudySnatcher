@@ -1,42 +1,22 @@
 name: Pyinstaller Windows
 on:
   push:
-    branches: [main]
-  release:
-    types: [published]
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
 jobs:
   build:
-    if: ${{ github.event_name == 'push' }}
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
-      - name: Package Application
-        uses: sayyid5416/pyinstaller@v1.8.0
-        with:
-          spec: "./StudyDrive Scraper.spec"
-          requirements: "./requirements.txt"
-          python_ver: 3.13
-      #       python_arch: x86
-      - uses: actions/upload-artifact@v4
-        with:
-          name: "StudySnatcher - Windows"
-          path: "./dist/StudySnatcher.exe"
-
-  release:
-    if: ${{ github.event_name == 'release' }}
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Build .exe
-        uses: sayyid5416/pyinstaller@v1.8.0
-        with:
-          spec: "./StudyDrive Scraper.spec"
-          requirements: "./requirements.txt"
-          python_ver: 3.13
-      - name: Upload Release Asset
-        uses: actions/upload-release-asset@v1
-        with:
-          upload_url: ${{ github.event.release.upload_url }}
-          asset_path: "./dist/StudySnatcher.exe"
-          asset_name: "StudySnatcherWindows.exe"
-          asset_content_type: "application/octet-stream"
+    - uses: actions/checkout@v4
+    - name: Package Application
+      uses: sayyid5416/pyinstaller@v1.8.0
+      with:
+        spec: './StudyDrive Scraper.spec'
+        requirements: './requirements.txt'
+        python_ver: 3.13
+#       python_arch: x86
+    - uses: actions/upload-artifact@v4
+      with:
+        name: 'StudySnatcher - Windows'
+        path: './dist/StudySnatcher.exe'
