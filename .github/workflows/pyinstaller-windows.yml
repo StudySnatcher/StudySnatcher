@@ -1,50 +1,42 @@
 name: Pyinstaller Windows
-
 on:
   push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+    branches: [main]
   release:
     types: [published]
-
 jobs:
   build:
+    if: ${{ github.event_name == 'push' }}
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
-
       - name: Package Application
         uses: sayyid5416/pyinstaller@v1.8.0
         with:
-          spec: './StudyDrive Scraper.spec'
-          requirements: './requirements.txt'
+          spec: "./StudyDrive Scraper.spec"
+          requirements: "./requirements.txt"
           python_ver: 3.13
-          # python_arch: x86
-
+      #       python_arch: x86
       - uses: actions/upload-artifact@v4
         with:
-          name: 'StudySnatcher - Windows'
-          path: './dist/StudySnatcher.exe'
+          name: "StudySnatcher - Windows"
+          path: "./dist/StudySnatcher.exe"
 
-  upload-release-asset:
-    # If you want to trigger on tags, use: `if: startsWith(github.ref, 'refs/tags/')`
+  release:
     if: ${{ github.event_name == 'release' }}
-    needs: build
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
-
-      - name: Download build artifact
-        uses: actions/download-artifact@v3
+      - name: Build .exe
+        uses: sayyid5416/pyinstaller@v1.8.0
         with:
-          name: 'StudySnatcher - Windows'
-          path: 'dist'
-
+          spec: "./StudyDrive Scraper.spec"
+          requirements: "./requirements.txt"
+          python_ver: 3.13
       - name: Upload Release Asset
         uses: actions/upload-release-asset@v1
         with:
           upload_url: ${{ github.event.release.upload_url }}
-          asset_path: 'dist/StudySnatcher.exe'
-          asset_name: 'StudySnatcher.exe'
-          asset_content_type: 'application/octet-stream'
+          asset_path: "./dist/StudySnatcher.exe"
+          asset_name: "StudySnatcherWindows.exe"
+          asset_content_type: "application/octet-stream"
