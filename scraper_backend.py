@@ -54,7 +54,81 @@ def get_download_link(document_id, session, pdf_converted):
     return location
 
 
-def get_course_documents(course_id, session):
+def matches_filter(data, filters):
+    """
+    Check if a data entry matches all the filter criteria.
+
+    :param data: A dictionary representing a single data entry.
+    :param filters: A dictionary of filter criteria, where keys can represent nested fields (e.g., "user_data.id").
+    :return: True if the data entry matches all filter criteria, False otherwise.
+    """
+    # {
+    #     'file_id': <int>,
+    #     'file_name': <str>,
+    #     'description': <str>,
+    #     'uploaded': <str>,
+    #     'time': <str>,
+    #     'course_id': <int>,
+    #     'course_name': <str>,
+    #     'course_link': <str>,
+    #     'university_id': <int>,
+    #     'university_name': <str>,
+    #     'semester_id': <int>,
+    #     'semester': <str>,
+    #     'has_ai_content': <bool>,
+    #     'flashcard_set_id': <None or int>,
+    #     'study_list_id': <None or int>,
+    #     'professor': <str>,
+    #     'visibility': <int>,
+    #     'file_type': <int>,
+    #     'type_name': <str>,
+    #     'is_owner': <bool>,
+    #     'is_followed': <bool>,
+    #     'is_infected': <bool>,
+    #     'link': <str>,
+    #     'preview_link': <str>,
+    #     'uservote': <bool>,
+    #     'user_star_vote': <int>,
+    #     'avg_star_score': <int>,
+    #     'upvotes': <int>,
+    #     'downvotes': <int>,
+    #     'rating': <int>,
+    #     'downloads': <int>,
+    #     'questions': <int>,
+    #     'user_data': {
+    #         'id': <None or int>,
+    #         'identity_id': <None or int>,
+    #         'name': <str>,
+    #         'link': <str>,
+    #         'picture': <str>,
+    #         'profile_picture': <str>,
+    #         'karma_points': <None or int>,
+    #         'gamify_avatar_url': <None or str>,
+    #         'time': <str>,
+    #         'is_deleted': <bool>
+    #     }
+    # }
+
+    for key, value in filters.items():
+        keys = key.split(".")  # Handle nested keys like "user_data.id"
+        field = data
+        for k in keys:
+            if isinstance(field, dict) and k in field:
+                field = field[k]
+            else:
+                return False  # Field does not exist
+
+        if isinstance(field, str):
+            if str(value).lower() not in field.lower():
+                return False
+        else:
+            # Perform a direct comparison for non-strings
+            if field != value:
+                return False
+    return True
+
+
+def get_course_documents(course_id, session, filters):
     """Retrieves all document IDs for a given course."""
     documents = []
     current_page = 0
@@ -70,53 +144,18 @@ def get_course_documents(course_id, session):
             session, url, params=params)
         data = response.json()
 
-        # {
-        #     'file_id': <int>,
-        #     'file_name': <str>,
-        #     'description': <str>,
-        #     'uploaded': <str>,
-        #     'time': <str>,
-        #     'course_id': <int>,
-        #     'course_name': <str>,
-        #     'course_link': <str>,
-        #     'university_id': <int>,
-        #     'university_name': <str>,
-        #     'semester_id': <int>,
-        #     'semester': <str>,
-        #     'has_ai_content': <bool>,
-        #     'flashcard_set_id': <None or int>,
-        #     'study_list_id': <None or int>,
-        #     'professor': <str>,
-        #     'visibility': <int>,
-        #     'file_type': <int>,
-        #     'type_name': <str>,
-        #     'is_owner': <bool>,
-        #     'is_followed': <bool>,
-        #     'is_infected': <bool>,
-        #     'link': <str>,
-        #     'preview_link': <str>,
-        #     'uservote': <bool>,
-        #     'user_star_vote': <int>,
-        #     'avg_star_score': <int>,
-        #     'upvotes': <int>,
-        #     'downvotes': <int>,
-        #     'rating': <int>,
-        #     'downloads': <int>,
-        #     'questions': <int>,
-        #     'user_data': {
-        #         'id': <None or int>,
-        #         'identity_id': <None or int>,
-        #         'name': <str>,
-        #         'link': <str>,
-        #         'picture': <str>,
-        #         'profile_picture': <str>,
-        #         'karma_points': <None or int>,
-        #         'gamify_avatar_url': <None or str>,
-        #         'time': <str>,
-        #         'is_deleted': <bool>
-        #     }
-        # }
-        documents.extend((f["file_id"], f["uploaded"]) for f in data.get("files", []) if "file_id" in f and "uploaded" in f)
+        files = data.get("files", [])
+
+        documents.extend(
+            (file["file_id"], file["file_name"],
+             file["uploaded"], file["semester"],
+             file["professor"])
+            for file in files
+            if "file_id" in file and "uploaded" in file
+            and "file_name" in file and "semester" in file
+            and "professor" in file
+            and matches_filter(file, filters)
+        )
 
         has_next_page = data.get("last_page", current_page) > current_page
         current_page += 1
@@ -185,26 +224,28 @@ def download_file(url, save_path):
     except requests.RequestException as e:
         print(f"Error downloading file: {e}")
 
+
 def change_file_timestamp(file_path, new_timestamp):
     """
     Changes the modification and access time of a file to the given timestamp.
-    
+
     :param file_path: Path to the file
     :param new_timestamp: Timestamp in the format 'YYYY-MM-DD HH:MM:SS'
     """
     try:
         # Parse the new timestamp string into a datetime object
         new_time = datetime.strptime(new_timestamp, '%Y-%m-%d %H:%M:%S')
-        
+
         # Convert the datetime object to a Unix timestamp
         new_unix_time = new_time.timestamp()
-        
+
         # Use os.utime to update the file's access and modification times
         os.utime(file_path, (new_unix_time, new_unix_time))
-        
+
         # print(f"Timestamp of '{file_path}' changed to {new_timestamp}")
     except Exception as e:
-        print(f"An error occurred when trying to change the timestamp of '{file_path}' to {new_timestamp}: {e}")
+        print(f"An error occurred when trying to change the timestamp of '{
+              file_path}' to {new_timestamp}: {e}")
 
 
 def create_folder(folder_path):
@@ -245,10 +286,30 @@ def decode_utf8_hex(string):
 
     return hex_pattern.sub(replace_hex, string)
 
+
+def get_unique_filename(filepath):
+    """
+    Given a file path, return a unique file path by appending a number 
+    (e.g. ' (1)', ' (2)', ...) until the name doesn't exist.
+    """
+    # Split the filepath into name and extension
+    base, ext = os.path.splitext(filepath)
+
+    # If there's no conflict, just return the original filepath
+    if not os.path.exists(filepath):
+        return filepath
+
+    # Otherwise, try appending a counter until you find a name that doesn't exist
+    counter = 1
+    while True:
+        new_filename = f"{base} ({counter}){ext}"
+        if not os.path.exists(new_filename):
+            return new_filename
+        counter += 1
+
+
 # Main logic
-
-
-def run(username, password, course_url, converted_to_pdf):
+def run(username, password, course_url, converted_to_pdf, filters):
     session = login(username, password)
 
     course_name, course_number = extract_course_info(course_url)
@@ -262,16 +323,29 @@ def run(username, password, course_url, converted_to_pdf):
     folder_path = re.sub(r'[<>:"/\\|?*\n\t]', '', course_name)
     create_folder(folder_path)
 
-    for doc_id, upload_time in get_course_documents(course_number, session):
+    docs = get_course_documents(course_number, session, filters)
+    for doc_id, doc_name, upload_time, semester, prof in docs:
         url = get_download_link(doc_id, session, converted_to_pdf)
         if not url:
             continue
-        filename = get_filename_from_url(url).replace("+", " ").replace("C3B6", "ö").replace(
-            "C396", "Ö").replace("C3A4", "ä").replace("C384", "Ä").replace("C3BC", "ü").replace("C39C", "Ü").replace("CC88", "ä")
-        #filename = decode_utf8_hex(filename)
-        save_path = os.path.join(folder_path, filename)
-        if not os.path.exists(save_path):
-            download_file(url, save_path)
-            change_file_timestamp(save_path, upload_time)
+
+        if '.' in doc_name:
+            filename = doc_name
+        else:
+            filename = get_filename_from_url(url).replace("+", " ").replace("C3B6", "ö").replace(
+                "C396", "Ö").replace("C3A4", "ä").replace("C384", "Ä").replace("C3BC", "ü").replace("C39C", "Ü").replace("UCC88", "Ü")
+            # filename = decode_utf8_hex(filename)
+
+        base, ext = os.path.splitext(filename)
+        if str(semester).strip():
+            base += " - " + str(semester).replace("/", "-")
+        if str(prof).strip():
+            base += " Prof " + prof
+
+        filename = base + ext
+
+        save_path = get_unique_filename(os.path.join(folder_path, filename))
+        download_file(url, save_path)
+        change_file_timestamp(save_path, upload_time)
 
     print("All files downloaded.")
