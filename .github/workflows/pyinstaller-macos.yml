@@ -1,53 +1,22 @@
 name: Pyinstaller MacOS
-
 on:
   push:
-    branches: [main]
-  release:
-    types: [published]
-
-permissions:
-  contents: write
-  checks: write
-
-  actions: read
-  issues: read
-  packages: write
-  pull-requests: read
-  repository-projects: read
-  statuses: read
-
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
 jobs:
   build:
-    if: ${{ github.event_name == 'push' }}
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v4
-      - name: Package Application
-        uses: sayyid5416/pyinstaller@v1.8.0
-        with:
-          spec: "./StudyDrive Scraper.spec"
-          requirements: "./requirements.txt"
-          python_ver: 3.13
-      - uses: actions/upload-artifact@v4
-        with:
-          name: "StudySnatcher - MacOS"
-          path: "./dist/StudySnatcher"
-
-  release:
-    if: ${{ github.event_name == 'release' }}
-    runs-on: macos-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Package Application
-        uses: sayyid5416/pyinstaller@v1.8.0
-        with:
-          spec: "./StudyDrive Scraper.spec"
-          requirements: "./requirements.txt"
-          python_ver: 3.13
-      - name: Upload to release
-        uses: cloudnode-pro/release-upload-asset@1.0.2
-        with:
-          gh-token: ${{ github.token }}
-          files: |
-            ./dist/StudySnatcher; name=StudySnatcherMacOS
+    - uses: actions/checkout@v4
+    - name: Package Application
+      uses: sayyid5416/pyinstaller@v1.8.0
+      with:
+        spec: './StudyDrive Scraper.spec'
+        requirements: './requirements.txt'
+        python_ver: 3.13
+#       python_arch: x86
+    - uses: actions/upload-artifact@v4
+      with:
+        name: 'StudySnatcher - MacOS'
+        path: './dist/StudySnatcher'
