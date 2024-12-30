@@ -46,7 +46,6 @@ jobs:
           requirements: "./requirements.txt"
           python_ver: 3.13
       - uses: Shopify/upload-to-release@v1
-      - name: Upload release binaries
         with:
           name: "StudySnatcherMacOS"
           path: "./dist/StudySnatcher"
