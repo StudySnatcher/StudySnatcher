@@ -45,9 +45,9 @@ jobs:
           spec: "./StudyDrive Scraper.spec"
           requirements: "./requirements.txt"
           python_ver: 3.13
-      - name: Upload to Release Action
-        uses: Shopify/upload-to-release@v2.0.0
+      - name: Upload to release
+        uses: cloudnode-pro/release-upload-asset@1.0.2
         with:
-          name: "StudySnatcherMacOS"
-          path: "./dist/StudySnatcher"
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          gh-token: ${{ github.token }}
+          files: |
+            ./dist/StudySnatcher; name=StudySnatcherMacOS
