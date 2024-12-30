@@ -45,11 +45,9 @@ jobs:
           spec: "./StudyDrive Scraper.spec"
           requirements: "./requirements.txt"
           python_ver: 3.13
+      - uses: Shopify/upload-to-release@v1
       - name: Upload release binaries
-        uses: alexellis/upload-assets@0.4.0
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
         with:
-          asset_path: "./dist/StudySnatcher"
-          asset_name: "StudySnatcherMacOS"
-          asset_content_type: "application/octet-stream"
+          name: "StudySnatcherMacOS"
+          path: "./dist/StudySnatcher"
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
