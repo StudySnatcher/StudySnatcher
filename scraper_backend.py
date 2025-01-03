@@ -329,14 +329,13 @@ def run(username, password, course_url, converted_to_pdf, filters):
         if not url:
             continue
 
-        if '.' in doc_name:
-            filename = doc_name
-        else:
-            filename = get_filename_from_url(url).replace("+", " ").replace("C3B6", "ö").replace(
-                "C396", "Ö").replace("C3A4", "ä").replace("C384", "Ä").replace("C3BC", "ü").replace("C39C", "Ü").replace("UCC88", "Ü")
-            # filename = decode_utf8_hex(filename)
+        filename = get_filename_from_url(url).replace("+", " ").replace("C3B6", "ö").replace(
+            "C396", "Ö").replace("C3A4", "ä").replace("C384", "Ä").replace("C3BC", "ü").replace("C39C", "Ü").replace("UCC88", "Ü")
+        # filename = decode_utf8_hex(filename)
 
-        base, ext = os.path.splitext(filename)
+        base, _ = os.path.splitext(doc_name)
+        _, ext = os.path.splitext(filename)
+
         if str(semester).strip():
             base += " - " + str(semester).replace("/", "-")
         if str(prof).strip():
